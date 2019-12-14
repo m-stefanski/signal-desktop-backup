@@ -5,3 +5,5 @@ openssl/
 pysqlcipher3/
 sqlcipher/
 backup*/
+
+signal_backup_*/
