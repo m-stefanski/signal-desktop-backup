@@ -13,7 +13,9 @@ def get_encryption_key(config_path):
         print(f"Opening config from {CONFIG_FILE}")
         with open(config_path) as f:
             config = json.load(f)
-            return config["key"]
+            key = config["key"]
+            print(f"Found key starting with: {key[0:4]}...")
+            return key
     except FileNotFoundError:
         print("Config file not found!")
         sys.exit(1)
@@ -32,10 +34,10 @@ def get_connection(database, key):
         conn.execute("SELECT * FROM sqlite_master").fetchall()
         return conn
     except sqlite.OperationalError as e:
-        print(f"Error when performing query: {e}")
+        print(f"OperationalError: {e}")
         sys.exit(1)
-    except sqlite.DatabaseError:
-        print("Could not unlock database, possible that format has changed. See PRAGMA settings.")
+    except sqlite.DatabaseError as e:
+        print(f"DatabaseError: {e}")
         sys.exit(1)
 
 def prepare_export_structure():
