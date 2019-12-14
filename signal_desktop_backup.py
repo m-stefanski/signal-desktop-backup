@@ -28,17 +28,22 @@ def get_connection(database, key):
         print(f"Opening database from {database}")
         conn = sqlite.connect(database)
         conn.execute(f"PRAGMA key = \"x'{key}'\"")
-        conn.execute("PRAGMA cipher_compatibility = 3")
-
-        # Testing successful unlock
         conn.execute("SELECT * FROM sqlite_master").fetchall()
         return conn
     except sqlite.OperationalError as e:
         print(f"OperationalError: {e}")
         sys.exit(1)
     except sqlite.DatabaseError as e:
-        print(f"DatabaseError: {e}")
-        sys.exit(1)
+        try:
+            print(f"Opening database from {database} (using sqlcipher 3)")
+            conn = sqlite.connect(database)
+            conn.execute(f"PRAGMA key = \"x'{key}'\"")
+            conn.execute("PRAGMA cipher_compatibility = 3")
+            conn.execute("SELECT * FROM sqlite_master").fetchall()
+            return conn
+        except:
+            print(f"DatabaseError: {e}")
+            sys.exit(1)
 
 def prepare_export_structure():
     import time
