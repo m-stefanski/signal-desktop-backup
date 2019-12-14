@@ -1,0 +1,5 @@
+venv/
+openssl/
+pysqlcipher3/
+sqlcipher/
+backup*/
