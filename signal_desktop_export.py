@@ -63,7 +63,7 @@ def get_conversation_filename(id, name):
         s = str(s).strip().replace(' ', '_')
         return re.sub(r'(?u)[^-\w.]', '', s)
 
-    hash = hashlib.md5("whatever your string is".encode('utf-8')).hexdigest()
+    hash = hashlib.md5(name.encode('utf-8')).hexdigest()
     return f"{get_valid_filename(name)}_{hash}.html"
 
 def create_css(conversations_dir):
@@ -124,18 +124,22 @@ def create_conversation_pages(conversations, conversation_dir):
         print(f"Backing up '{name}'...")
 
         CONVERSATION_FILENAME = join(conversation_dir, get_conversation_filename(id, name))
-        messages  = conn.execute(f"SELECT json FROM messages where conversationId=\"{id}\" order by sent_at asc").fetchall()
+        
+        try:
+            messages = conn.execute(f"SELECT json FROM messages where conversationId=\"{id}\" order by sent_at asc").fetchall()
 
-        with open(CONVERSATION_FILENAME, 'w') as html_file:
-            html_file.write(f"<html><head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\"></head><body><h1>Conversation with {name}</h1>") 
-            
-            for (json) in messages:
-                html_row = parse_message_row(json[0])
-                if html_row is not None:
-                    html_file.write(html_row)
+            with open(CONVERSATION_FILENAME, 'w') as html_file:
+                html_file.write(f"<html><head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\"></head><body><h1>Conversation with {name}</h1>") 
+                
+                for (json) in messages:
+                    html_row = parse_message_row(json[0])
+                    if html_row is not None:
+                        html_file.write(html_row)
 
-            html_file.write("</body></html>") 
-            html_file.close()
+                html_file.write("</body></html>") 
+                html_file.close()
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     print(f'Starting Signal Desktop backup...')

@@ -1,4 +1,4 @@
-# signal-desktop-backup
+# signal-desktop-export
 
 This script is a result of the frustration I felt when I realized there is no way to create backup for Signal for Desktop conversations.
 
@@ -15,7 +15,7 @@ As of now, only MacOS version is available. Should be compatible with Cathalina 
 
 ## Usage
 
-**After** properly installed, run ```python signal_desktop_backup.py```. 
+**After** properly installed, run ```python signal_desktop_export.py```. 
 
 ```signal_backup_YYYYMMDD_HHMMSS``` folder should appear, together with conversations exported as html.
 
