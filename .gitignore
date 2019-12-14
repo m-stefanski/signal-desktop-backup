@@ -4,6 +4,5 @@ venv/
 openssl/
 pysqlcipher3/
 sqlcipher/
-backup*/
 
-signal_backup_*/
+signal_export_*/

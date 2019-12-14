@@ -1,6 +1,6 @@
 # signal-desktop-export
 
-This script is a result of the frustration I felt when I realized there is no way to create backup for Signal for Desktop conversations.
+This script is a result of the frustration I felt when I realized there is no way to create export for Signal for Desktop conversations.
 
 Then, few additional hours of frustration spent to rfind out how to get python to read SQLite databases that have been encrypted with sqlcipher.
 
@@ -17,7 +17,7 @@ As of now, only MacOS version is available. Should be compatible with Cathalina 
 
 **After** properly installed, run ```python signal_desktop_export.py```. 
 
-```signal_backup_YYYYMMDD_HHMMSS``` folder should appear, together with conversations exported as html.
+```signal_export_YYYYMMDD_HHMMSS``` folder should appear, together with conversations exported as html.
 
 If you get an error alike ```ModuleNotFoundError: No module named 'pysqlcipher3'```, please make sure you followed the steps below.
 

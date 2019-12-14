@@ -49,13 +49,13 @@ def prepare_export_structure():
     import time
     TIMESTAMP = time.strftime("%Y%m%d_%H%M%S")
     
-    BACKUP_DIR = join(getcwd(), f"signal_backup_{TIMESTAMP}")
-    mkdir(BACKUP_DIR)
+    EXPORT_DIR = join(getcwd(), f"signal_export_{TIMESTAMP}")
+    mkdir(EXPORT_DIR)
 
-    CONVERSATIONS_DIR = join(BACKUP_DIR, 'conversations')
+    CONVERSATIONS_DIR = join(EXPORT_DIR, 'conversations')
     mkdir(CONVERSATIONS_DIR)
 
-    return BACKUP_DIR, CONVERSATIONS_DIR
+    return EXPORT_DIR, CONVERSATIONS_DIR
 
 def get_conversation_filename(id, name):
 
@@ -84,8 +84,8 @@ def create_css(conversations_dir):
 """)
 
 
-def create_html_index(conversations, backup_dir):
-    INDEX_FILENAME = join(backup_dir, 'conversations.html')
+def create_html_index(conversations, export_dir):
+    INDEX_FILENAME = join(export_dir, 'conversations.html')
 
     with open(INDEX_FILENAME, 'w') as html_file:
         html_file.write("<html><head><meta charset=\"utf-8\"/></head><body><h1>Conversations</h1><ul>") 
@@ -142,7 +142,7 @@ def create_conversation_pages(conversations, conversation_dir):
             print(f"Error: {e}")
 
 if __name__ == "__main__":
-    print(f'Starting Signal Desktop backup...')
+    print(f'Starting Signal Desktop export...')
 
     if sys.platform == "darwin":
         HOME_DIR = expanduser("~")
@@ -156,11 +156,11 @@ if __name__ == "__main__":
     key = get_encryption_key(CONFIG_FILE)
     conn = get_connection(DATABASE_FILE, key)
 
-    BACKUP_DIR, CONVERSATIONS_DIR = prepare_export_structure()
+    EXPORT_DIR, CONVERSATIONS_DIR = prepare_export_structure()
 
     conversations = conn.execute("SELECT id, name FROM conversations").fetchall()
 
-    create_html_index(conversations, BACKUP_DIR)
+    create_html_index(conversations, EXPORT_DIR)
     create_css(CONVERSATIONS_DIR)
     create_conversation_pages(conversations, CONVERSATIONS_DIR)
 
