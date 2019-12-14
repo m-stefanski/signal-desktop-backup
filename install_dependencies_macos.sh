@@ -20,7 +20,7 @@ cd ..
 
 git clone https://github.com/sqlcipher/sqlcipher.git
 cd sqlcipher
-./configure --enable-tempstore=yes CFLAGS="-DSQLITE_HAS_CODEC -I/usr/local/opt/openssl/include/" LDFLAGS="/usr/local/opt/openssl/lib/libcrypto.a"
+./configure --enable-tempstore=yes CFLAGS="-DSQLITE_HAS_CODEC -I/usr/local/include/openssl/" LDFLAGS="/usr/local/lib/libcrypto.a"
 sudo make install 
 
 cd ..
