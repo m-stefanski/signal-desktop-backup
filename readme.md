@@ -2,7 +2,7 @@
 
 This script is a result of the frustration I felt when I realized there is no way to create export for Signal for Desktop conversations.
 
-Then, few additional hours of frustration spent to rfind out how to get python to read SQLite databases that have been encrypted with sqlcipher.
+Then, few additional hours of frustration spent to find out how to get python to read SQLite databases that have been encrypted with sqlcipher.
 
 This is not a user-friendly tool, rather a starting point for further development.
 
@@ -21,7 +21,7 @@ As of now, only MacOS version is available. Should be compatible with Cathalina 
 
 If you get an error alike ```ModuleNotFoundError: No module named 'pysqlcipher3'```, please make sure you followed the steps below.
 
-## Instalation
+## Installation
 
 ### Automatic
 
