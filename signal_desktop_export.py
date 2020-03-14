@@ -1,5 +1,5 @@
-from os.path import expanduser, join, isdir, exists
-from os import mkdir, getcwd
+import os
+from shutil import copyfile
 import json
 import sys
 from pysqlcipher3 import dbapi2 as sqlite
@@ -7,11 +7,18 @@ import hashlib
 import re
 import json
 import time
+from jinja2 import Environment, FileSystemLoader
 
-def get_encryption_key(config_path):
+def get_conversations(conn):
+    return conn.execute("SELECT id, name FROM conversations").fetchall()
+
+def get_messages(conn, conversation_id):
+    return conn.execute(f"SELECT json FROM messages where conversationId=\"{id}\" order by sent_at asc").fetchall()
+
+def get_encryption_key(config_file):
     try:
-        print(f"Opening config from {CONFIG_FILE}")
-        with open(config_path) as f:
+        print(f"Opening config from {config_file}")
+        with open(config_file) as f:
             config = json.load(f)
             key = config["key"]
             print(f"Found key starting with: {key[0:4]}...")
@@ -25,7 +32,7 @@ def get_encryption_key(config_path):
 
 def get_connection(database, key):
     try:
-        print(f"Opening database from {database}")
+        print(f"Trying to open database {database} (using sqlcipher 4)")
         conn = sqlite.connect(database)
         conn.execute(f"PRAGMA key = \"x'{key}'\"")
         conn.execute("SELECT * FROM sqlite_master").fetchall()
@@ -35,7 +42,7 @@ def get_connection(database, key):
         sys.exit(1)
     except sqlite.DatabaseError as e:
         try:
-            print(f"Opening database from {database} (using sqlcipher 3)")
+            print(f"Trying to open database {database} (using sqlcipher 3)")
             conn = sqlite.connect(database)
             conn.execute(f"PRAGMA key = \"x'{key}'\"")
             conn.execute("PRAGMA cipher_compatibility = 3")
@@ -45,17 +52,17 @@ def get_connection(database, key):
             print(f"DatabaseError: {e}")
             sys.exit(1)
 
-def prepare_export_structure():
-    import time
-    TIMESTAMP = time.strftime("%Y%m%d_%H%M%S")
-    
-    EXPORT_DIR = join(getcwd(), f"signal_export_{TIMESTAMP}")
-    mkdir(EXPORT_DIR)
+def create_output_directory():
+    timestamp = time.strftime("%Y%m%d_%H%M%S") 
+    output_directory = os.path.join(os.getcwd(), f"signal_export_{timestamp}")
+    os.mkdir(output_directory)
+    os.mkdir(os.path.join(output_directory, 'conversations'))
 
-    CONVERSATIONS_DIR = join(EXPORT_DIR, 'conversations')
-    mkdir(CONVERSATIONS_DIR)
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", 'style.css')
+    dest = os.path.join(output_directory, 'style.css')
+    copyfile(src, dest)
 
-    return EXPORT_DIR, CONVERSATIONS_DIR
+    return output_directory
 
 def get_conversation_filename(id, name):
 
@@ -66,35 +73,18 @@ def get_conversation_filename(id, name):
     hash = hashlib.md5(name.encode('utf-8')).hexdigest()
     return f"{get_valid_filename(name)}_{hash}.html"
 
-def create_css(conversations_dir):
-    CSS_FILENAME = join(conversations_dir, 'style.css')
+def create_html_index(conversations, export_dir, env):
+    
+    conversation_links = []
+    for (id, name) in conversations:
+        conversation_links.append((name, get_conversation_filename(id, name)))
+    
+    template = env.get_template('index.html')
+    output = template.render(timestamp=time.strftime("%Y-%m-%d %H:%M:%S"), conversation_links=conversation_links)
 
-    with open(CSS_FILENAME, 'w') as css_file:
-        css_file.write("""
-.speech-bubble {
-	position: relative;
-	border-radius: .4em;
-}
-.incoming {
-    background: #aaaaaa;
-}
-.outgoing {
-    background: #dddddd;
-}
-""")
-
-
-def create_html_index(conversations, export_dir):
-    INDEX_FILENAME = join(export_dir, 'conversations.html')
-
-    with open(INDEX_FILENAME, 'w') as html_file:
-        html_file.write("<html><head><meta charset=\"utf-8\"/></head><body><h1>Conversations</h1><ul>") 
-        for (id, name) in conversations:
-            conversation_filename=get_conversation_filename(id, name)
-            html_file.write(f"<li><a href=\"conversations/{conversation_filename}\">{name}</a></li>")
-        html_file.write("</ul></body></html>") 
-        html_file.close()
-
+    with open(os.path.join(export_dir, 'index.html'), 'w') as output_file:
+        output_file.write(output)
+        output_file.close()
 
 def parse_message_row(row_json):
     row = json.loads(row_json)
@@ -116,28 +106,26 @@ def parse_message_row(row_json):
     received = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(row["received_at"]/1000))
     body = row.get("body")
 
-    return f"<div class=\"speech-bubble {mess_type}\">{received}: {body}{attachments}</div>"
+    return (mess_type, received, body, attachments)
 
-
-def create_conversation_pages(conversations, conversation_dir):
-    for (id, name) in conversations:
+def create_conversation_pages(conversations, output_directory, env):
+    for (conversation_id, name) in conversations:
         print(f"Backing up '{name}'...")
-
-        CONVERSATION_FILENAME = join(conversation_dir, get_conversation_filename(id, name))
         
         try:
-            messages = conn.execute(f"SELECT json FROM messages where conversationId=\"{id}\" order by sent_at asc").fetchall()
+            messages = get_messages(conn, conversation_id)
+            message_data = []
 
-            with open(CONVERSATION_FILENAME, 'w') as html_file:
-                html_file.write(f"<html><head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\"></head><body><h1>Conversation with {name}</h1>") 
-                
-                for (json) in messages:
-                    html_row = parse_message_row(json[0])
-                    if html_row is not None:
-                        html_file.write(html_row)
+            for (json) in messages:
+                message_data.append(parse_message_row(json[0]))
+            
+            template = env.get_template('conversation.html')
+            output = template.render(name=name, messages=message_data)
 
-                html_file.write("</body></html>") 
-                html_file.close()
+            with open(os.path.join(output_directory, "conversations", get_conversation_filename(conversation_id, name)), 'w') as output_file:
+                output_file.write(output)
+                output_file.close()
+
         except Exception as e:
             print(f"Error: {e}")
 
@@ -145,24 +133,22 @@ if __name__ == "__main__":
     print(f'Starting Signal Desktop export...')
 
     if sys.platform == "darwin":
-        HOME_DIR = expanduser("~")
-        SIGNAL_DIR = join(HOME_DIR, 'Library', 'Application Support', 'Signal')
-        CONFIG_FILE = join(SIGNAL_DIR, "config.json")
-        DATABASE_FILE = join(SIGNAL_DIR, "sql", "db.sqlite")
+        signal_data_path = os.path.join(os.path.expanduser("~"), 'Library', 'Application Support', 'Signal')
+        config_file_path = os.path.join(signal_data_path, "config.json")
+        database_file_path = os.path.join(signal_data_path, "sql", "db.sqlite")
     else:
         print("Only MacOS tested so far, extiting.")
         sys.exit(0)
 
-    key = get_encryption_key(CONFIG_FILE)
-    conn = get_connection(DATABASE_FILE, key)
+    conn = get_connection(database_file_path, get_encryption_key(config_file_path))
+    output_directory = create_output_directory()
 
-    EXPORT_DIR, CONVERSATIONS_DIR = prepare_export_structure()
+    conversations = get_conversations(conn)
+    file_loader = FileSystemLoader(os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"))
+    env = Environment(loader=file_loader)
 
-    conversations = conn.execute("SELECT id, name FROM conversations").fetchall()
-
-    create_html_index(conversations, EXPORT_DIR)
-    create_css(CONVERSATIONS_DIR)
-    create_conversation_pages(conversations, CONVERSATIONS_DIR)
+    create_html_index(conversations, output_directory, env)
+    create_conversation_pages(conversations, output_directory, env)
 
     
 

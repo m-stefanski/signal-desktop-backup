@@ -1,0 +1,10 @@
+{% extends "main.html" %}
+{% block title %}Signal conversation with {{ name }}{% endblock %}
+
+{% block content %}
+{% for mess_type, received, body, attachments in messages %}
+<li>
+    <div class="speech-bubble {{ mess_type }}">{{ received }}: {{ body }}{{ attachments }}</div>
+</li>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "main.html" %}
+{% block title %}Signal conversations exported on {{timestamp}}{% endblock %}
+
+{% block content %}
+{% for name, filename in conversation_links %}
+<li>
+    <a href="conversations/{{ filename }}">{{ name }}</a>
+</li>
+{% endfor %}
+{% endblock %}

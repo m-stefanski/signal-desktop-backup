@@ -1,0 +1,10 @@
+.speech-bubble {
+	position: relative;
+	border-radius: .4em;
+}
+.incoming {
+    background: #aaaaaa;
+}
+.outgoing {
+    background: #dddddd;
+}
